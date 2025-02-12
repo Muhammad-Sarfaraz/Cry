@@ -23,10 +23,13 @@
     </a>
 </p>
 
+<div align="center">
+    <img src="https://raw.githubusercontent.com/Muhammad-Sarfaraz/Cry/refs/heads/main/arts/app-main.png">
+</div>
+
 ## About Cry  
 
 **Cry** is a **high-performance, GUI-based load testing tool** built with **Go, Electron, and Tailwind CSS**. It enables developers and DevOps teams to **test APIs, measure response times, and optimize application performance** using an intuitive, modern user interface.  
-
 
 ## Features  
 
@@ -35,12 +38,6 @@
 - **Customizable Load Testing** – Set concurrency, time and more  
 - **Real-Time Performance Metrics** – Monitor response times, success rates, and errors  
 - **Dark Mode & Tailwind CSS Styling** – Clean, modern, and visually appealing
-
-<div align="center">
-
-![](https://raw.githubusercontent.com/Muhammad-Sarfaraz/Cry/refs/heads/main/arts/app-main.png)
-
-</div>
 
 ## Installation  
 
