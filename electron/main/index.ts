@@ -96,7 +96,7 @@ async function createWindow() {
         {
           label: "GitHub",
           click: () => {
-            shell.openExternal("https://github.com/your-profile");
+            shell.openExternal("https://github.com/Muhammad-Sarfaraz/Cry");
           },
         },
       ],
