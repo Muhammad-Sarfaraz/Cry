@@ -3,6 +3,8 @@ import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import os from 'node:os'
+import { spawn, ChildProcess } from 'child_process'
+import { existsSync } from 'fs'
 import { update } from './update'
 
 
@@ -41,6 +43,7 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 let win: BrowserWindow | null = null
+let goProcess: ChildProcess | null = null
 const preload = path.join(__dirname, '../preload/index.mjs')
 const indexHtml = path.join(RENDERER_DIST, 'index.html')
 
@@ -106,20 +109,7 @@ async function createWindow() {
   const menu = Menu.buildFromTemplate(menuTemplate);
   Menu.setApplicationMenu(menu);
 
-  console.log('process.env.APP_ROOT ',process.env.APP_ROOT )
-
-    // Execute the external exe file
-    const { execFile } = require("child_process");
-    const exePath = path.join(`${process.env.APP_ROOT}/cry-engine/build`, "cry-engine.exe");
-    
-    execFile(exePath, (err:any, stdout:any, stderr:any) => {
-      if (err) {
-        console.error(`Error executing file: ${err.message}`);
-        return;
-      }
-      console.log(`Output: ${stdout}`);
-      if (stderr) console.error(`Error Output: ${stderr}`);
-    });
+  startGoEngine();
 
   if (VITE_DEV_SERVER_URL) { // #298
     win.loadURL(VITE_DEV_SERVER_URL)
@@ -144,11 +134,147 @@ async function createWindow() {
   update(win)
 }
 
+function getGoBinaryName(): string {
+  if (process.platform === 'win32') {
+    return 'cry-engine.exe'
+  }
+  return 'cry-engine'
+}
+
+function startGoEngine(): void {
+  if (goProcess) {
+    console.log('Go engine already running')
+    return
+  }
+
+  const isDev = !app.isPackaged
+  const cryEngineDir = path.join(process.env.APP_ROOT, 'cry-engine')
+  const mainGoPath = path.join(cryEngineDir, 'main.go')
+  
+  console.log(`[Go Engine] APP_ROOT: ${process.env.APP_ROOT}`)
+  console.log(`[Go Engine] cry-engine dir: ${cryEngineDir}`)
+  console.log(`[Go Engine] isDev: ${isDev}`)
+  
+  let command: string
+  let args: string[]
+  let cwd: string
+
+  if (isDev) {
+    if (!existsSync(mainGoPath)) {
+      const error = `main.go not found at ${mainGoPath}. Make sure cry-engine directory exists.`
+      console.error(`[Go Engine] ${error}`)
+      win?.webContents.send('go-engine-error', error)
+      return
+    }
+    
+    command = 'go'
+    args = ['run', 'main.go']
+    cwd = cryEngineDir
+    console.log(`[Go Engine] Starting in dev mode: ${command} ${args.join(' ')}`)
+    console.log(`[Go Engine] Working directory: ${cwd}`)
+  } else {
+    const binaryName = getGoBinaryName()
+    const exePath = path.join(cryEngineDir, 'build', binaryName)
+    
+    if (!existsSync(exePath)) {
+      const error = `Go binary not found at ${exePath}`
+      console.error(`[Go Engine] ${error}`)
+      win?.webContents.send('go-engine-error', error)
+      return
+    }
+    
+    command = exePath
+    args = []
+    cwd = cryEngineDir
+    console.log(`[Go Engine] Starting from compiled binary: ${exePath}`)
+  }
+
+  try {
+    goProcess = spawn(command, args, {
+      cwd,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      shell: false,
+      env: process.env
+    })
+
+    goProcess.stdout?.on('data', (data) => {
+      const output = data.toString().trim()
+      if (output) {
+        console.log(`[Go Engine] ${output}`)
+      }
+    })
+
+    goProcess.stderr?.on('data', (data) => {
+      const output = data.toString().trim()
+      if (output) {
+        console.error(`[Go Engine Error] ${output}`)
+      }
+    })
+
+    goProcess.on('error', (error) => {
+      const errorMsg = `Failed to start Go engine: ${error.message}`
+      console.error(`[Go Engine] ${errorMsg}`)
+      if (isDev && error.message.includes('ENOENT')) {
+        const helpMsg = 'Go is not installed or not in PATH. Please install Go: https://go.dev/dl/'
+        console.error(`[Go Engine] ${helpMsg}`)
+        win?.webContents.send('go-engine-error', `${errorMsg}\n${helpMsg}`)
+      } else {
+        win?.webContents.send('go-engine-error', errorMsg)
+      }
+      goProcess = null
+    })
+
+    goProcess.on('exit', (code, signal) => {
+      if (code !== null) {
+        console.log(`[Go Engine] Exited with code ${code}${signal ? ` and signal ${signal}` : ''}`)
+      }
+      goProcess = null
+      
+      if (code !== 0 && code !== null) {
+        const crashMsg = `Go engine crashed with code ${code}${signal ? ` and signal ${signal}` : ''}`
+        console.error(`[Go Engine] ${crashMsg}`)
+        win?.webContents.send('go-engine-crashed', { code, signal })
+      }
+    })
+
+    console.log('[Go Engine] Process spawned, waiting for startup...')
+  } catch (error) {
+    const errorMsg = `Error starting Go engine: ${error}`
+    console.error(`[Go Engine] ${errorMsg}`)
+    win?.webContents.send('go-engine-error', errorMsg)
+  }
+}
+
+function stopGoEngine(): void {
+  if (goProcess) {
+    console.log('Stopping Go engine...')
+    goProcess.kill('SIGTERM')
+    
+    const timeout = setTimeout(() => {
+      if (goProcess) {
+        console.log('Force killing Go engine...')
+        goProcess.kill('SIGKILL')
+      }
+    }, 5000)
+
+    goProcess.on('exit', () => {
+      clearTimeout(timeout)
+      goProcess = null
+      console.log('Go engine stopped')
+    })
+  }
+}
+
 app.whenReady().then(createWindow)
 
 app.on('window-all-closed', () => {
+  stopGoEngine()
   win = null
   if (process.platform !== 'darwin') app.quit()
+})
+
+app.on('before-quit', () => {
+  stopGoEngine()
 })
 
 app.on('second-instance', () => {
