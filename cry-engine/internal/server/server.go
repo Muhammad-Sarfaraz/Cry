@@ -13,7 +13,7 @@ import (
 
 func Start() error {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/attack", handlers.HandleAttack)
+	mux.HandleFunc("/test", handlers.HandleStartTest)
 	mux.HandleFunc("/metrics", handlers.HandleMetrics)
 	mux.HandleFunc("/stop", handlers.HandleStop)
 

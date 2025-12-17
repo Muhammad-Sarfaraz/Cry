@@ -53,7 +53,7 @@ const App: React.FC = () => {
 
     try {
       setIsTestRunning(true);
-      await axios.post("http://localhost:9632/attack", {
+      await axios.post("http://localhost:9632/test", {
         ...config,
         duration: config.duration * 1000000000,
         timeout: 5000000000,

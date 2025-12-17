@@ -11,7 +11,7 @@ High-performance HTTP load testing engine written in Go. Provides a REST API for
 
 ## API Endpoints
 
-- `POST /attack` - Start a load test
+- `POST /test` - Start a load test
 - `GET /metrics` - Get current test metrics
 - `POST /stop` - Stop the current test
 
@@ -41,9 +41,9 @@ Or use the compiled binary:
 ./build/cry-engine
 ```
 
-## Attack Configuration
+## Test Configuration
 
-Send a POST request to `/attack` with JSON body:
+Send a POST request to `/test` with JSON body:
 ```json
 {
   "target": "https://example.com",

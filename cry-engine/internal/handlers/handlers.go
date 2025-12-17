@@ -5,42 +5,42 @@ import (
 	"net/http"
 	"sync"
 
-	"cry-engine/internal/attack"
 	"cry-engine/internal/models"
+	"cry-engine/internal/test"
 )
 
 var (
-	currentAttack *attack.Attack
-	attackLock    sync.Mutex
+	currentTest *test.Test
+	testLock    sync.Mutex
 )
 
-func HandleAttack(w http.ResponseWriter, r *http.Request) {
+func HandleStartTest(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	var cfg models.AttackConfig
+	var cfg models.TestConfig
 	if err := json.NewDecoder(r.Body).Decode(&cfg); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	attackLock.Lock()
-	if currentAttack != nil && currentAttack.IsRunning() {
-		attackLock.Unlock()
-		http.Error(w, "Attack already in progress", http.StatusConflict)
+	testLock.Lock()
+	if currentTest != nil && currentTest.IsRunning() {
+		testLock.Unlock()
+		http.Error(w, "Test already in progress", http.StatusConflict)
 		return
 	}
 
-	currentAttack = attack.New(cfg)
-	attackLock.Unlock()
+	currentTest = test.New(cfg)
+	testLock.Unlock()
 
 	go func() {
-		currentAttack.Start()
-		attackLock.Lock()
-		currentAttack = nil
-		attackLock.Unlock()
+		currentTest.Start()
+		testLock.Lock()
+		currentTest = nil
+		testLock.Unlock()
 	}()
 
 	w.WriteHeader(http.StatusAccepted)
@@ -52,16 +52,16 @@ func HandleMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	attackLock.Lock()
-	atk := currentAttack
-	attackLock.Unlock()
+	testLock.Lock()
+	t := currentTest
+	testLock.Unlock()
 
-	if atk == nil || !atk.IsRunning() {
-		http.Error(w, "No active attack", http.StatusNotFound)
+	if t == nil || !t.IsRunning() {
+		http.Error(w, "No active test", http.StatusNotFound)
 		return
 	}
 
-	metrics := atk.GetMetrics()
+	metrics := t.GetMetrics()
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(metrics)
 }
@@ -72,19 +72,19 @@ func HandleStop(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	attackLock.Lock()
-	atk := currentAttack
-	attackLock.Unlock()
+	testLock.Lock()
+	t := currentTest
+	testLock.Unlock()
 
-	if atk == nil || !atk.IsRunning() {
-		http.Error(w, "No active attack", http.StatusNotFound)
+	if t == nil || !t.IsRunning() {
+		http.Error(w, "No active test", http.StatusNotFound)
 		return
 	}
 
-	atk.Stop()
-	attackLock.Lock()
-	currentAttack = nil
-	attackLock.Unlock()
+	t.Stop()
+	testLock.Lock()
+	currentTest = nil
+	testLock.Unlock()
 
 	w.WriteHeader(http.StatusOK)
 }

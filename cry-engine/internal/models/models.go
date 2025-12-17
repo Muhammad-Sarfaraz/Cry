@@ -2,7 +2,7 @@ package models
 
 import "time"
 
-type AttackConfig struct {
+type TestConfig struct {
 	Target   string        `json:"target"`
 	Rate     int           `json:"rate"`
 	Duration time.Duration `json:"duration"`
