@@ -8,7 +8,8 @@
   },
   "files": [
     "dist-electron",
-    "dist"
+    "dist",
+    "cry-engine/build"
   ],
   "mac": {
     "artifactName": "${productName}_${version}.${ext}",
