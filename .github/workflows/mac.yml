@@ -32,6 +32,16 @@ jobs:
       - name: Install dependencies
         run: npm install
       
+      - name: Prepare icon
+        run: |
+          mkdir -p build
+          if [ -f arts/logo-2400x2400.png ]; then
+            sips -z 512 512 arts/logo-2400x2400.png --out build/icon.png
+          else
+            echo "Error: arts/logo-2400x2400.png not found. Icon must be at least 512x512 for macOS builds."
+            exit 1
+          fi
+      
       - name: Build application
         run: npm run build
         env:
