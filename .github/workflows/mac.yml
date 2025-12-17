@@ -22,7 +22,7 @@ jobs:
         working-directory: cry-engine
         run: |
           mkdir -p build
-          go build -o build/cry-engine main.go
+          go build -o build/cry-engine ./cmd/server
       
       - name: Setup Node.js
         uses: actions/setup-node@v4

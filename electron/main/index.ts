@@ -153,7 +153,6 @@ function startGoEngine(): void {
 
   const isDev = !app.isPackaged
   const cryEngineDir = path.join(APP_ROOT, 'cry-engine')
-  const mainGoPath = path.join(cryEngineDir, 'main.go')
   
   console.log(`[Go Engine] APP_ROOT: ${APP_ROOT}`)
   console.log(`[Go Engine] cry-engine dir: ${cryEngineDir}`)
@@ -164,6 +163,7 @@ function startGoEngine(): void {
   let cwd: string
 
   if (isDev) {
+    const mainGoPath = path.join(cryEngineDir, 'cmd', 'server', 'main.go')
     if (!existsSync(mainGoPath)) {
       const error = `main.go not found at ${mainGoPath}. Make sure cry-engine directory exists.`
       console.error(`[Go Engine] ${error}`)
@@ -172,7 +172,7 @@ function startGoEngine(): void {
     }
     
     command = 'go'
-    args = ['run', 'main.go']
+    args = ['run', './cmd/server']
     cwd = cryEngineDir
     console.log(`[Go Engine] Starting in dev mode: ${command} ${args.join(' ')}`)
     console.log(`[Go Engine] Working directory: ${cwd}`)

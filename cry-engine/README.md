@@ -27,13 +27,13 @@ PORT=9632
 ## Build
 
 ```bash
-go build -o build/cry-engine main.go
+go build -o build/cry-engine ./cmd/server
 ```
 
 ## Run
 
 ```bash
-go run main.go
+go run ./cmd/server
 ```
 
 Or use the compiled binary:
