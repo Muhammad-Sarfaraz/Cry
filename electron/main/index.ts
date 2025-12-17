@@ -25,13 +25,15 @@ process.env.APP_ROOT = app.isPackaged
   ? path.join(path.dirname(app.getAppPath()), '..')
   : path.join(__dirname, '../..')
 
-export const MAIN_DIST = path.join(process.env.APP_ROOT, 'dist-electron')
-export const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist')
+const APP_ROOT = process.env.APP_ROOT || path.join(__dirname, '../..')
+export const MAIN_DIST = path.join(APP_ROOT, 'dist-electron')
+export const RENDERER_DIST = path.join(APP_ROOT, 'dist')
 export const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL
 
-process.env.VITE_PUBLIC = VITE_DEV_SERVER_URL
-  ? path.join(process.env.APP_ROOT, 'public')
+const VITE_PUBLIC = VITE_DEV_SERVER_URL
+  ? path.join(APP_ROOT, 'public')
   : RENDERER_DIST
+process.env.VITE_PUBLIC = VITE_PUBLIC
 
 // Disable GPU Acceleration for Windows 7
 if (os.release().startsWith('6.1')) app.disableHardwareAcceleration()
@@ -52,7 +54,7 @@ const indexHtml = path.join(RENDERER_DIST, 'index.html')
 async function createWindow() {
   win = new BrowserWindow({
     title: 'Cry - High Performance Load Testing Tool',
-    icon: path.join(process.env.VITE_PUBLIC, 'favicon.ico'),
+    icon: path.join(VITE_PUBLIC, 'favicon.ico'),
     width: 1200,
     height: 750,
     webPreferences: {
@@ -150,10 +152,10 @@ function startGoEngine(): void {
   }
 
   const isDev = !app.isPackaged
-  const cryEngineDir = path.join(process.env.APP_ROOT, 'cry-engine')
+  const cryEngineDir = path.join(APP_ROOT, 'cry-engine')
   const mainGoPath = path.join(cryEngineDir, 'main.go')
   
-  console.log(`[Go Engine] APP_ROOT: ${process.env.APP_ROOT}`)
+  console.log(`[Go Engine] APP_ROOT: ${APP_ROOT}`)
   console.log(`[Go Engine] cry-engine dir: ${cryEngineDir}`)
   console.log(`[Go Engine] isDev: ${isDev}`)
   
